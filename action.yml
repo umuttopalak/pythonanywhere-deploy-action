@@ -23,7 +23,11 @@ runs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+
     - name: Install Dependencies
       run: pip install -r requirements.txt
       shell: bash
 
+    - name: Reload App
+      run: python main.py
+      shell : bash
