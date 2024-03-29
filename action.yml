@@ -1,0 +1,21 @@
+name: 'Reload pythonanywhere webapp'
+description: 'GitHub action to reload a webapp on pythonanywhere'
+inputs:
+  HOST:
+    description: 'Pythonanywhere host (EU/US), can be either eu.pythonanywhere.com or www.pythonanywhere.com (default)'
+    default: 'www.pythonanyhwere.com'
+  USERNAME:
+    description: 'Username for pythonanywhere'
+    required: true
+  API_TOKEN: 
+    description: 'API token for pythonanywhere'
+    required: true
+  DOMAIN_NAME:
+    description: 'Domain name of the webapp to reload'
+    required: true
+  CONSOLE_ID:
+    description: 'Console id of the webapp created from'
+    required: true
+runs:
+  using: 'python3.10'
+  main: 'main.py'
