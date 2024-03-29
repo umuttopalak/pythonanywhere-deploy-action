@@ -31,14 +31,14 @@ runs:
     - name: Update Repository
       run: |
         python src/update_repository.py
-      shell: bash
+      uses: ./
     
     - name: Update Requirements
       run: |
         python src/update_requirements.py
-      shell: bash 
+      uses: ./
     
     - name: Reload Host
       run: |
         python src/reload_host.py
-      shell: bash 
+      uses: ./
