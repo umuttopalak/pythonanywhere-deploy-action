@@ -12,8 +12,8 @@ jobs:
       - name: Reload pythonanywhere webapp
         uses: ./ # Uses an action in the root directory
         with:
-          HOST  = www.pythonanywhere.com
-          USERNAME  = gondergelsin
-          API_TOKEN  = 70551989b1813e53c7e05f72547d9abd33d3f562
-          DOMAIN_NAME  = 33084452
-          CONSOLE_ID  = gondergelsin.pythonanywhere.com
+          HOST : www.pythonanywhere.com
+          USERNAME  : gondergelsin
+          API_TOKEN  : 70551989b1813e53c7e05f72547d9abd33d3f562
+          DOMAIN_NAME  : 33084452
+          CONSOLE_ID  : gondergelsin.pythonanywhere.com
