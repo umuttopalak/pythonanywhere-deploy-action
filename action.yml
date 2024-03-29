@@ -1,5 +1,5 @@
-name: 'Reload pythonanywhere webapp'
-description: 'GitHub action to reload a webapp on pythonanywhere'
+name: 'Re-deploy'
+description: 'A Github Action that Re-Deploys pythonanywhere-web-application'
 inputs:
   HOST:
     description: 'Pythonanywhere host (EU/US), can be either eu.pythonanywhere.com or www.pythonanywhere.com (default)'
@@ -23,11 +23,18 @@ runs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-
     - name: Install Dependencies
       run: pip install -r requirements.txt
       shell: bash
 
-    - name: Reload App
-      run: python main.py
-      shell : bash
+    - name: update repository
+      run: python src/update_repository.py
+      shell: bash
+    
+    - name: update requirements
+    run: python src/update_requirements.py
+    shell: bash
+    
+    - name: reload host
+    run: python src/reload_host.py
+    shell: bash
