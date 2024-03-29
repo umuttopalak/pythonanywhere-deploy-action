@@ -23,6 +23,7 @@ runs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.10'
+        
     - name: Install Dependencies
       run: |
         pip install -r requirements.txt
@@ -31,17 +32,14 @@ runs:
     - name: Update Repository
       run: |
         python src/update_repository.py
-      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
       shell: bash 
     
     - name: Update Requirements
       run: |
         python src/update_requirements.py
-      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
       shell: bash 
       
     - name: Reload Host
       run: |
         python src/reload_host.py
-      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
       shell: bash 
