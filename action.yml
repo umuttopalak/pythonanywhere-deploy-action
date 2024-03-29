@@ -1,40 +1,30 @@
-name: 'Re-deploy'
-description: 'A Github Action that Re-Deploys pythonanywhere-web-application'
-inputs:
-  HOST:
-    description: 'Pythonanywhere host (EU/US), can be either eu.pythonanywhere.com or www.pythonanywhere.com (default)'
-    default: 'www.pythonanyhwere.com'
-  USERNAME:
-    description: 'Username for pythonanywhere'
-    required: true
-  API_TOKEN: 
-    description: 'API token for pythonanywhere'
-    required: true
-  DOMAIN_NAME:
-    description: 'Domain name of the webapp to reload'
-    required: true
-  CONSOLE_ID:
-    description: 'Console id of the webapp created from'
-    required: true
-runs:
-  using: 'composite'
-  steps:
-    - name: Install Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install Dependencies
-      run: pip install -r requirements.txt
-      shell: bash
+name: 'Re-deploy with Docker'
 
-    - name: update repository
-      run: python src/update_repository.py
-      shell: bash
-    
-    - name: update requirements
-    run: python src/update_requirements.py
-    shell: bash
-    
-    - name: reload host
-    run: python src/reload_host.py
-    shell: bash
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build Docker image
+      run: |
+        docker build -t my-python-app .
+      
+    - name: Run Docker container
+      run: |
+        docker run \
+          -e USERNAME=$USERNAME \
+          -e API_TOKEN=$API_TOKEN \
+          -e DOMAIN_NAME=$DOMAIN_NAME \
+          -e CONSOLE_ID=$CONSOLE_ID \
+          my-python-app
