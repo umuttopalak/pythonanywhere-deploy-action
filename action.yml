@@ -31,14 +31,17 @@ runs:
     - name: Update Repository
       run: |
         python src/update_repository.py
-      uses: ./
+      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
+      shell: bash 
     
     - name: Update Requirements
       run: |
         python src/update_requirements.py
-      uses: ./
-    
+      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
+      shell: bash 
+      
     - name: Reload Host
       run: |
         python src/reload_host.py
-      uses: ./
+      uses: umuttopalak/pythonanywhere-deploy-action@v2.1
+      shell: bash 
