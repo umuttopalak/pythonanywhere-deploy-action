@@ -37,7 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const axios_1 = __importDefault(require("axios"));
-function main() {
+function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const host = core.getInput("host");
