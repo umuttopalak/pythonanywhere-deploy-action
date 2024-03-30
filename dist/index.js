@@ -74,7 +74,7 @@ function run() {
             console.log("Reloading webapp.");
             console.log(`https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/"`);
             const url = `https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/"`;
-            response = yield axios_1.default.post(url, null, {
+            response = yield axios_1.default.post(url, {}, {
                 headers: { Authorization: `Token ${api_token}` },
             });
             console.log("Reloaded webapp successfully.");

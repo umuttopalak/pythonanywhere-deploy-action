@@ -34,7 +34,7 @@ async function run() {
     console.log("Reloading webapp.");
     console.log(`https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/"`);
     const url: string = `https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/"`;
-    response = await axios.post(url, null, {
+    response = await axios.post(url, {}, {
       headers: { Authorization: `Token ${api_token}` },
     });
     console.log("Reloaded webapp successfully.");
