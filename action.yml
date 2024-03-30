@@ -1,4 +1,4 @@
-name: Python application
+name: Python Application
 
 on:
   push:
@@ -6,38 +6,50 @@ on:
   pull_request:
     branches: [ "master" ]
 
-permissions:
-  contents: read
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
+    inputs:
+      host:
+        description: 'Host'
+        required: true
+      username:
+        description: 'Username'
+        required: true
+      api_token:
+        description: 'API Token'
+        required: true
+      console_id:
+        description: 'Console ID'
+        required: true
+      domain_name:
+        description: 'Domain Name'
+        required: true
+
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
-        python-version: "3.10"   
+        python-version: "3.10"
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
     - name: Set up environment variables
       run: |
-        echo "HOST=$HOST" >> $GITHUB_ENV
-        echo "USERNAME=$USERNAME" >> $GITHUB_ENV
-        echo "API_TOKEN=$API_TOKEN" >> $GITHUB_ENV
-        echo "CONSOLE_ID=$CONSOLE_ID" >> $GITHUB_ENV
-        echo "DOMAIN_NAME=$DOMAIN_NAME" >> $GITHUB_ENV
+        echo "HOST=${{ inputs.host }}" >> $GITHUB_ENV
+        echo "USERNAME=${{ inputs.username }}" >> $GITHUB_ENV
+        echo "API_TOKEN=${{ inputs.api_token }}" >> $GITHUB_ENV
+        echo "CONSOLE_ID=${{ inputs.console_id }}" >> $GITHUB_ENV
+        echo "DOMAIN_NAME=${{ inputs.domain_name }}" >> $GITHUB_ENV
 
-  run-script:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Test with python
+    - name: Run Python script
       run: |
         python src/main.py
-
-  

@@ -2,11 +2,11 @@ import os
 
 import requests
 
-host = os.getenv('HOST')
-username = os.getenv('USERNAME')
-api_token = os.getenv('API_TOKEN')
-console_id = os.getenv('CONSOLE_ID')
-domain_name = os.getenv('DOMAIN_NAME')
+host = os.getenv('host')
+username = os.getenv('username')
+api_token = os.getenv('api_token')
+console_id = os.getenv('console_id')
+domain_name = os.getenv('domain_name')
 
 
 # Pull Repository
