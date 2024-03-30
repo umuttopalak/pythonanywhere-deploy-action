@@ -1,56 +1,7 @@
-name: Python Application
-description: This action re-deploys django application published on pythonanywhere.com
+name: "Label new pull requests"
+description: "Add a label when a new PR is opened."
+author: "Umut Topalak"
 
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    inputs:
-      host:
-        description: 'Host'
-        required: true
-      username:
-        description: 'Username'
-        required: true
-      api_token:
-        description: 'API Token'
-        required: true
-      console_id:
-        description: 'Console ID'
-        required: true
-      domain_name:
-        description: 'Domain Name'
-        required: true
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.10"
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-    - name: Set up environment variables
-      run: |
-        echo "host=${{ github.event.inputs.host }}" >> $GITHUB_ENV
-        echo "username=${{ github.event.inputs.username }}" >> $GITHUB_ENV
-        echo "api_token=${{ github.event.inputs.api_token }}" >> $GITHUB_ENV
-        echo "console_id=${{ github.event.inputs.console_id }}" >> $GITHUB_ENV
-        echo "domain_name=${{ github.event.inputs.domain_name }}" >> $GITHUB_ENV
-
-    - name: Run Python script
-      run: |
-        python src/main.py
+runs:
+  using: "node16"
+  main: "dist/index.js"
