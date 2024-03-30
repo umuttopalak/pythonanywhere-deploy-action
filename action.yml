@@ -1,7 +1,24 @@
-name: "Label new pull requests"
-description: "Add a label when a new PR is opened."
-author: "Umut Topalak"
-
+name: 'Re-Deploy Pythonanywhere Django API'
+description: 'GitHub action to re-deploy a django webapp on pythonanywhere'
+inputs:
+  host:
+    description: 'Pythonanywhere host (EU/US), can be either eu.pythonanywhere.com or www.pythonanywhere.com'
+    required: true
+  username:
+    description: 'Username for pythonanywhere'
+    required: true
+  api_token: 
+    description: 'API token for pythonanywhere'
+    required: true
+  domain_name:
+    description: 'Domain name of the webapp to reload'
+    required: true
+  console_id:
+    description: 'Console id of the webapp to cloned from'
+    required: true
 runs:
-  using: "node16"
-  main: "dist/index.js"
+  using: 'node16'
+  main: 'dist/index.js'
+branding:
+  icon: refresh-cw
+  color: green
