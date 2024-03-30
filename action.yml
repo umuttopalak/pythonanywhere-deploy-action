@@ -16,9 +16,11 @@ inputs:
   console_id:
     description: 'Console id of the webapp to cloned from'
     required: true
+
 runs:
   using: 'node16'
   main: 'dist/index.js'
+
 branding:
   icon: refresh-cw
   color: green
