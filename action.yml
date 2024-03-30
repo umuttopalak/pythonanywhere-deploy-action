@@ -1,30 +1,46 @@
-name: 'Re-deploy with Docker'
+name: Python application
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-run:
+  build:
+
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Build Docker image
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
       run: |
-        docker build -t update-container .
-      
-    - name: Run Docker container
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        pip install requests
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Set up environment variables
       run: |
-        docker run \
-          -e USERNAME=$USERNAME \
-          -e API_TOKEN=$API_TOKEN \
-          -e DOMAIN_NAME=$DOMAIN_NAME \
-          -e CONSOLE_ID=$CONSOLE_ID \
-          update-container
+        echo "HOST=$HOST" >> $GITHUB_ENV
+        echo "USERNAME=$USERNAME" >> $GITHUB_ENV
+        echo "API_TOKEN=$API_TOKEN" >> $GITHUB_ENV
+        echo "CONSOLE_ID=$CONSOLE_ID" >> $GITHUB_ENV
+        echo "DOMAIN_NAME=$DOMAIN_NAME" >> $GITHUB_ENV
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test with pytest
+      run: |
+        python src/main.py
+
+  
