@@ -18,7 +18,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t my-python-app .
+        docker build -t update-container .
       
     - name: Run Docker container
       run: |
@@ -27,4 +27,4 @@ jobs:
           -e API_TOKEN=$API_TOKEN \
           -e DOMAIN_NAME=$DOMAIN_NAME \
           -e CONSOLE_ID=$CONSOLE_ID \
-          my-python-app
+          update-container
