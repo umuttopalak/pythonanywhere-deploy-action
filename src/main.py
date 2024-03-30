@@ -8,6 +8,12 @@ api_token = os.getenv('API_TOKEN')
 console_id = os.getenv('CONSOLE_ID')
 domain_name = os.getenv('DOMAIN_NAME')
 
+print(host)
+print(username) 
+print(api_token) 
+print(console_id )
+print(domain_name )
+
 # Pull Repository
 try:
 
