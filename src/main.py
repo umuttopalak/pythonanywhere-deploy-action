@@ -8,11 +8,6 @@ api_token = os.getenv('API_TOKEN')
 console_id = os.getenv('CONSOLE_ID')
 domain_name = os.getenv('DOMAIN_NAME')
 
-print(host)
-print(username) 
-print(api_token) 
-print(console_id )
-print(domain_name )
 
 # Pull Repository
 try:
@@ -50,7 +45,7 @@ try:
     r = requests.post(url=console_url, headers=headers, data=payload)
 
 except Exception:
-    exit('ERROR: Couldnt update requirements')
+    exit('ERROR: Couldnt run `python manage.py migrate`')
 
 # Reload Host
 try:
