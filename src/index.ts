@@ -44,3 +44,5 @@ async function run() {
     );
   }
 }
+
+run();
