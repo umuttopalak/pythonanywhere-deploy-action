@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import axios from "axios";
 
-async function main() {
+async function run() {
   try {
     const host: string = core.getInput("host");
     const username: string = core.getInput("username");
