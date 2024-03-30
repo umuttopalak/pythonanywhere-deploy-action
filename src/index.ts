@@ -10,14 +10,7 @@ async function run() {
     const console_id: string = core.getInput("console_id");
 
     console.log("Running `git pull`.");
-    console.log(
-      `https://${host}/api/v0/user/{username}/consoles/${console_id}/send_input/`
-    );
-    console.log(
-      `https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/`
-    );
-
-    const console_url: string = `https://${host}/api/v0/user/{username}/consoles/${console_id}/send_input/`;
+    const console_url: string = `https://${host}/api/v0/user/${username}/consoles/${console_id}/send_input/`;
     let payload = { input: "git pull\n" };
     let response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },
