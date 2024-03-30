@@ -45,11 +45,11 @@ jobs:
 
     - name: Set up environment variables
       run: |
-        echo "host=${{ inputs.host }}" >> $GITHUB_ENV
-        echo "username=${{ inputs.username }}" >> $GITHUB_ENV
-        echo "api_token=${{ inputs.api_token }}" >> $GITHUB_ENV
-        echo "console_id=${{ inputs.console_id }}" >> $GITHUB_ENV
-        echo "domain_name=${{ inputs.domain_name }}" >> $GITHUB_ENV
+        echo "host=${{ github.event.inputs.host }}" >> $GITHUB_ENV
+        echo "username=${{ github.event.inputs.username }}" >> $GITHUB_ENV
+        echo "api_token=${{ github.event.inputs.api_token }}" >> $GITHUB_ENV
+        echo "console_id=${{ github.event.inputs.console_id }}" >> $GITHUB_ENV
+        echo "domain_name=${{ github.event.inputs.domain_name }}" >> $GITHUB_ENV
 
     - name: Run Python script
       run: |
