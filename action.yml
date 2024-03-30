@@ -1,4 +1,5 @@
 name: Python Application
+description: This action re-deploys django application published on pythonanywhere.com
 
 on:
   push:
