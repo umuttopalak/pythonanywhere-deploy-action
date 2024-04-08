@@ -128,3 +128,5 @@ out
 .yarn/install-state.gz
 .pnp.*
 
+test.py
+.git*

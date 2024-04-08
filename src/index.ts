@@ -8,11 +8,21 @@ async function run() {
     const api_token: string = core.getInput("api_token");
     const domain_name: string = core.getInput("domain_name");
     const console_id: string = core.getInput("console_id");
+    const virtual_env: string = core.getInput("virtual_env");
 
     console.log("Running `git pull`.");
     const console_url: string = `https://${host}/api/v0/user/${username}/consoles/${console_id}/send_input/`;
     let payload = { input: "git pull\n" };
     let response = await axios.post(console_url, payload, {
+      headers: { Authorization: `Token ${api_token}` },
+    });
+    console.log("Success.");
+
+    console.log("Starting Virtual Environment");
+    payload = {
+      input: `source /home/${username}/.virtualenvs/${virtual_env}/bin/activate`,
+    };
+    response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },
     });
     console.log("Success.");
@@ -33,9 +43,13 @@ async function run() {
 
     console.log("Reloading webapp.");
     const url: string = `https://${host}/api/v0/user/${username}/webapps/${domain_name}/reload/`;
-    response = await axios.post(url, {}, {
-      headers: { Authorization: `Token ${api_token}` },
-    });
+    response = await axios.post(
+      url,
+      {},
+      {
+        headers: { Authorization: `Token ${api_token}` },
+      }
+    );
     console.log("Reloaded webapp successfully.");
   } catch (error) {
     core.setFailed(
