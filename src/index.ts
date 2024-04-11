@@ -10,18 +10,21 @@ async function run() {
     const console_id: string = core.getInput("console_id");
     const virtual_env: string = core.getInput("virtual_env");
 
-    console.log("Running `git pull`.");
     const console_url: string = `https://${host}/api/v0/user/${username}/consoles/${console_id}/send_input/`;
-    let payload = { input: "git pull\n" };
-    let response = await axios.post(console_url, payload, {
-      headers: { Authorization: `Token ${api_token}` },
-    });
-    console.log("Success.");
+    let payload  = {}
+    let response = {}
 
     console.log("Starting Virtual Environment");
     payload = {
       input: `source /home/${username}/.virtualenvs/${virtual_env}/bin/activate`,
     };
+    response = await axios.post(console_url, payload, {
+      headers: { Authorization: `Token ${api_token}` },
+    });
+    console.log("Success.");
+
+    console.log("Running `git pull`.");
+    payload = { input: "git pull\n" };
     response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },
     });
