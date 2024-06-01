@@ -17,7 +17,7 @@ async function run() {
 
     console.log("Changing Directory")
     payload = {
-      input: `cd ${directory}/`,
+      input: `cd ${directory}/\n`,
     };
     response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },
@@ -26,7 +26,7 @@ async function run() {
 
     console.log("Starting Virtual Environment");
     payload = {
-      input: `source ${virtual_env}/bin/activate`,
+      input: `source ${virtual_env}/bin/activate\n`,
     };
     response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },

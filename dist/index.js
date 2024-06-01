@@ -59,7 +59,7 @@ function run() {
             let response = {};
             console.log("Changing Directory");
             payload = {
-                input: `cd ${directory}/`,
+                input: `cd ${directory}/\n`,
             };
             response = yield axios_1.default.post(console_url, payload, {
                 headers: { Authorization: `Token ${api_token}` },
@@ -67,7 +67,7 @@ function run() {
             console.log("Success.");
             console.log("Starting Virtual Environment");
             payload = {
-                input: `source ${virtual_env}/bin/activate`,
+                input: `source ${virtual_env}/bin/activate\n`,
             };
             response = yield axios_1.default.post(console_url, payload, {
                 headers: { Authorization: `Token ${api_token}` },
