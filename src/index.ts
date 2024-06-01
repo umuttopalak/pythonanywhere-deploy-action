@@ -16,7 +16,7 @@ async function run() {
 
     console.log("Starting Virtual Environment");
     payload = {
-      input: `source /${virtual_env}/bin/activate`,
+      input: `source ${virtual_env}/bin/activate`,
     };
     response = await axios.post(console_url, payload, {
       headers: { Authorization: `Token ${api_token}` },
