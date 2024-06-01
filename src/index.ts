@@ -9,19 +9,29 @@ async function run() {
     const domain_name: string = core.getInput("domain_name");
     const console_id: string = core.getInput("console_id");
     const virtual_env: string = core.getInput("virtual_env");
+    const directory: string = core.getInput("directory");
 
     const console_url: string = `https://${host}/api/v0/user/${username}/consoles/${console_id}/send_input/`;
     let payload  = {}
     let response = {}
 
-    // console.log("Starting Virtual Environment");
-    // payload = {
-    //   input: `source ${virtual_env}/bin/activate`,
-    // };
-    // response = await axios.post(console_url, payload, {
-    //   headers: { Authorization: `Token ${api_token}` },
-    // });
-    // console.log("Success.");
+    console.log("Changing Directory")
+    payload = {
+      input: `cd ${directory}/`,
+    };
+    response = await axios.post(console_url, payload, {
+      headers: { Authorization: `Token ${api_token}` },
+    });
+    console.log("Success.");
+
+    console.log("Starting Virtual Environment");
+    payload = {
+      input: `source ${virtual_env}/bin/activate`,
+    };
+    response = await axios.post(console_url, payload, {
+      headers: { Authorization: `Token ${api_token}` },
+    });
+    console.log("Success.");
 
     console.log("Running `git pull`.");
     payload = { input: "git pull\n" };
