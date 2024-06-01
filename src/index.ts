@@ -14,14 +14,14 @@ async function run() {
     let payload  = {}
     let response = {}
 
-    console.log("Starting Virtual Environment");
-    payload = {
-      input: `source ${virtual_env}/bin/activate`,
-    };
-    response = await axios.post(console_url, payload, {
-      headers: { Authorization: `Token ${api_token}` },
-    });
-    console.log("Success.");
+    // console.log("Starting Virtual Environment");
+    // payload = {
+    //   input: `source ${virtual_env}/bin/activate`,
+    // };
+    // response = await axios.post(console_url, payload, {
+    //   headers: { Authorization: `Token ${api_token}` },
+    // });
+    // console.log("Success.");
 
     console.log("Running `git pull`.");
     payload = { input: "git pull\n" };
