@@ -17,6 +17,8 @@ The pythonanywhere API is currently in beta state. Because of that it is possibl
           api_token: <pythonanywhere-api-token>
           domain_name: <pythonanywhere-web-app-domain>
           console_id: <pythonanywhere-bash-id>
+          virtual_env: <python-env-which-is-you-created> 
+          directory: <project-path-where-you-clone-repository>
 ```
 
 ## Get API token
@@ -47,6 +49,8 @@ jobs:
           api_token: {{ secrets.API_TOKEN }}
           domain_name: {{ secrets.DOMAIN_NAME }}
           console_id:  {{ secrets.CONSOLE_ID }}
+          virtual_env: {{ secrets.VIRTUAL_ENV }}
+          directory: {{ secrets.DIRECTORY }}
 ```
 
 # License
