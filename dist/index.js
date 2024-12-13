@@ -154,62 +154,69 @@ function performPostRequest(requestUrl, payload, token) {
         }
     });
 }
+function setupConsole(baseConsoleUrl, api_token, host, username) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const consoleListData = yield performGetRequest(baseConsoleUrl, api_token);
+        if (Array.isArray(consoleListData) && consoleListData.length > 0) {
+            const _console = consoleListData.pop();
+            return _console.id;
+        }
+        else {
+            const _console = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
+            core.warning(`Console created. Please start your terminal: https://${host}/user/${username}/consoles/${_console.id}/`);
+            return _console.id;
+        }
+    });
+}
+function setupWebApp(baseWebAppUrl, api_token, domain_name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const webappListData = yield performGetRequest(baseWebAppUrl, api_token);
+        if (Array.isArray(webappListData) && webappListData.length > 0) {
+            const web_app = domain_name
+                ? webappListData.find((webapp) => webapp.domain_name === domain_name)
+                : webappListData[0];
+            if (!web_app) {
+                throw new Error(`No matching web application found for domain: ${domain_name}`);
+            }
+            return web_app;
+        }
+        else {
+            throw new Error("No web applications found.");
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            let consoleId = null;
-            let web_app = null;
-            let domain_name = core.getInput("domain_name", { required: false }) || "none";
             const username = core.getInput("username", { required: true });
             const api_token = core.getInput("api_token", { required: true });
             const host = core.getInput("host", { required: true });
+            const domain_name = core.getInput("domain_name", { required: false }) || "none";
+            if (!username || !api_token || !host) {
+                core.setFailed("Required inputs (username, api_token, host) are missing.");
+                return;
+            }
             const baseApiUrl = `https://${host}/api/v0/user/${username}`;
-            // CONSOLE SETUP
             const baseConsoleUrl = `${baseApiUrl}/consoles/`;
-            const consoleListData = yield performGetRequest(baseConsoleUrl, api_token);
-            if (Array.isArray(consoleListData) && consoleListData.length > 0) {
-                const _console = consoleListData.pop();
-                consoleId = _console.id;
-            }
-            else {
-                const _console = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-                consoleId = _console.id;
-                core.setFailed(`Console created. Please start your terminal: https://${host}/user/${username}/consoles/${consoleId}/`);
-                return;
-            }
-            if (!consoleId) {
-                core.setFailed("Console ID could not be retrieved or created.");
-                return;
-            }
-            // WEBAPP SETUP
             const baseWebAppUrl = `${baseApiUrl}/webapps/`;
-            const webappListData = yield performGetRequest(baseWebAppUrl, api_token);
-            if (Array.isArray(webappListData) && webappListData.length > 0) {
-                web_app = domain_name
-                    ? webappListData.find((webapp) => webapp.domain_name === domain_name)
-                    : webappListData[0];
-                if (!web_app) {
-                    core.setFailed(`No matching web application found for domain: ${domain_name}`);
-                    return;
-                }
-            }
-            else {
-                core.setFailed("No web applications found.");
-                return;
-            }
-            domain_name = web_app.domain_name;
-            const virtual_env = web_app.virtualenv_path;
-            const source_directory = web_app.source_directory;
+            // Console Setup
+            const consoleId = yield setupConsole(baseConsoleUrl, api_token, host, username);
+            if (!consoleId)
+                throw new Error("Console ID could not be retrieved or created.");
+            // WebApp Setup
+            const web_app = yield setupWebApp(baseWebAppUrl, api_token, domain_name);
+            // Virtual Environment and Database Setup
             const consoleRequestUrl = `${baseApiUrl}/consoles/${consoleId}/send_input/`;
-            yield postConsoleInput(consoleRequestUrl, api_token, `source ${virtual_env}/bin/activate`, "Virtual Environment Activated.");
-            yield postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${source_directory}/requirements.txt`, "Requirements Installed.");
-            yield postConsoleInput(consoleRequestUrl, api_token, `python ${source_directory}/manage.py migrate`, "Database Migrated.");
-            const reloadUrl = `${baseApiUrl}/webapps/${domain_name}/reload/`;
+            yield postConsoleInput(consoleRequestUrl, api_token, `source ${web_app.virtualenv_path}/bin/activate`, "Virtual Environment Activated.");
+            yield postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${web_app.source_directory}/requirements.txt`, "Requirements Installed.");
+            yield postConsoleInput(consoleRequestUrl, api_token, `python ${web_app.source_directory}/manage.py migrate`, "Database Migrated.");
+            // WebApp Reload
+            const reloadUrl = `${baseApiUrl}/webapps/${web_app.domain_name}/reload/`;
             yield performPostRequest(reloadUrl, {}, api_token);
-            console.log(`Web application reloaded successfully.`);
+            core.info("Web application reloaded successfully.");
         }
         catch (error) {
-            core.setFailed(error instanceof Error ? error.message : JSON.stringify(error));
+            core.setFailed(error instanceof Error ? error.message : "Unknown error occurred.");
         }
     });
 }
