@@ -10,7 +10,7 @@ The pythonanywhere API is currently in beta state. Because of that it is possibl
 
 ```yaml
 - name: Re-Deploy Pythonanywhere Django API
-        uses: umuttopalak/pythonanywhere-deploy-action@v1.0.0
+        uses: umuttopalak/pythonanywhere-deploy-action@v1.1.0
         with:
           host: <pythonanywhere host>
           username: <your-username>
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Re-Deploy Pythonanywhere Django API
-        uses: umuttopalak/pythonanywhere-deploy-action@v1.0.0
+        uses: umuttopalak/pythonanywhere-deploy-action@v1.1.0
         with:
           host: 'www.pythonanywhere.com' or 'www.eu.pythonanywhere.com'
           username: {{ secrets.USERNAME }}
