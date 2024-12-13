@@ -48,12 +48,12 @@ const axios_1 = __importDefault(__nccwpck_require__(8757));
  * postConsoleInput
  * ----------------
  *
- * @param consoleUrl
+ * @param consoleRequestUrl
  * @param token
  * @param input
  * @param successMsg
  */
-function postConsoleInput(consoleUrl, token, input, successMsg) {
+function postConsoleInput(consoleRequestUrl, token, input, successMsg) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const payload = { input: `${input}\n` };
@@ -63,7 +63,7 @@ function postConsoleInput(consoleUrl, token, input, successMsg) {
                 },
             };
             console.log(`Running command: ${input}`);
-            const response = yield axios_1.default.post(consoleUrl, payload, config);
+            const response = yield axios_1.default.post(consoleRequestUrl, payload, config);
             if (response.status < 200 || response.status >= 300) {
                 throw new Error(`Request failed with status code: ${response.status}`);
             }
@@ -71,10 +71,84 @@ function postConsoleInput(consoleUrl, token, input, successMsg) {
         }
         catch (error) {
             const errorMessage = `Error sending command "${input}": ${error.message}`;
-            core.error(errorMessage);
+            core.setFailed(errorMessage);
             if (error.response) {
-                core.error(`Response Status: ${error.response.status}`);
-                core.error(`Response Data: ${JSON.stringify(error.response.data)}`);
+                core.setFailed(`Response Status: ${error.response.status}`);
+                core.setFailed(`Response Data: ${JSON.stringify(error.response.data)}`);
+            }
+            throw error;
+        }
+    });
+}
+/**
+ * performGetRequest
+ * -----------------
+ *
+ * @param requestUrl  GET isteği atılacak URL
+ * @param token
+ * @returns           response.data
+ */
+function performGetRequest(requestUrl, token) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const config = token
+                ? {
+                    headers: { Authorization: `Token ${token}` },
+                }
+                : {};
+            console.log(`Sending GET request to: ${requestUrl}`);
+            const response = yield axios_1.default.get(requestUrl, config);
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(`GET request failed with status code: ${response.status}`);
+            }
+            return response.data;
+        }
+        catch (error) {
+            const errorMessage = `Error in GET request: ${error.message}`;
+            core.setFailed(errorMessage);
+            if (error.response) {
+                core.setFailed(`Response Status: ${error.response.status}`);
+                core.setFailed(`Response Data: ${JSON.stringify(error.response.data)}`);
+            }
+            throw error;
+        }
+    });
+}
+/**
+ * performPostRequest
+ * ------------------
+ *
+ * @param requestUrl
+ * @param payload
+ * @param token
+ * @returns
+ */
+function performPostRequest(requestUrl, payload, token) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const config = token
+                ? {
+                    headers: {
+                        Authorization: `Token ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+                : {
+                    headers: { "Content-Type": "application/json" },
+                };
+            console.log(`Sending POST request to: ${requestUrl}`);
+            const response = yield axios_1.default.post(requestUrl, payload, config);
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error(`POST request failed with status code: ${response.status}`);
+            }
+            return response.data;
+        }
+        catch (error) {
+            const errorMessage = `POST request failed: ${error.message}`;
+            core.setFailed(`POST request to ${requestUrl} failed: ${error.message}`);
+            if (error.response) {
+                core.setFailed(`Response Status: ${error.response.status}`);
+                core.setFailed(`Response Data: ${JSON.stringify(error.response.data)}`);
             }
             throw error;
         }
@@ -83,29 +157,56 @@ function postConsoleInput(consoleUrl, token, input, successMsg) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const host = core.getInput("host", { required: true });
+            let consoleId = null;
+            let web_app = null;
+            let domain_name = core.getInput("domain_name", { required: false }) || "none";
             const username = core.getInput("username", { required: true });
             const api_token = core.getInput("api_token", { required: true });
-            const domain_name = core.getInput("domain_name", { required: true });
-            const console_id = core.getInput("console_id", { required: true });
-            const virtual_env = core.getInput("virtual_env", { required: true });
-            const directory = core.getInput("directory", { required: true });
+            const host = core.getInput("host", { required: true });
             const baseApiUrl = `https://${host}/api/v0/user/${username}`;
-            const consoleUrl = `${baseApiUrl}/consoles/${console_id}/send_input/`;
-            const reloadUrl = `${baseApiUrl}/webapps/${domain_name}/reload/`;
-            yield postConsoleInput(consoleUrl, api_token, `cd ${directory}`, "Changed directory.");
-            yield postConsoleInput(consoleUrl, api_token, `source ${virtual_env}/bin/activate`, "Activated virtual environment.");
-            yield postConsoleInput(consoleUrl, api_token, "git pull", "Pulled latest code.");
-            yield postConsoleInput(consoleUrl, api_token, "pip install -r requirements.txt", "Installed requirements.");
-            yield postConsoleInput(consoleUrl, api_token, "python manage.py migrate", "Database migrated.");
-            console.log("Reloading webapp...");
-            const reloadResponse = yield axios_1.default.post(reloadUrl, {}, {
-                headers: { Authorization: `Token ${api_token}` },
-            });
-            if (reloadResponse.status < 200 || reloadResponse.status >= 300) {
-                throw new Error(`Failed to reload webapp. Status code: ${reloadResponse.status}`);
+            // CONSOLE SETUP
+            const baseConsoleUrl = `${baseApiUrl}/consoles/`;
+            const consoleListData = yield performGetRequest(baseConsoleUrl, api_token);
+            if (Array.isArray(consoleListData) && consoleListData.length > 0) {
+                const _console = consoleListData.pop();
+                consoleId = _console.id;
             }
-            console.log("Reloaded webapp successfully.");
+            else {
+                const _console = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
+                consoleId = _console.id;
+                core.setFailed(`Console created. Please start your terminal: https://${host}/user/${username}/consoles/${consoleId}/`);
+                return;
+            }
+            if (!consoleId) {
+                core.setFailed("Console ID could not be retrieved or created.");
+                return;
+            }
+            // WEBAPP SETUP
+            const baseWebAppUrl = `${baseApiUrl}/webapps/`;
+            const webappListData = yield performGetRequest(baseWebAppUrl, api_token);
+            if (Array.isArray(webappListData) && webappListData.length > 0) {
+                web_app = domain_name
+                    ? webappListData.find((webapp) => webapp.domain_name === domain_name)
+                    : webappListData[0];
+                if (!web_app) {
+                    core.setFailed(`No matching web application found for domain: ${domain_name}`);
+                    return;
+                }
+            }
+            else {
+                core.setFailed("No web applications found.");
+                return;
+            }
+            domain_name = web_app.domain_name;
+            const virtual_env = web_app.virtualenv_path;
+            const source_directory = web_app.source_directory;
+            const consoleRequestUrl = `${baseApiUrl}/consoles/${consoleId}/send_input/`;
+            yield postConsoleInput(consoleRequestUrl, api_token, `source ${virtual_env}/bin/activate`, "Virtual Environment Activated.");
+            yield postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${source_directory}/requirements.txt`, "Requirements Installed.");
+            yield postConsoleInput(consoleRequestUrl, api_token, `python ${source_directory}/manage.py migrate`, "Database Migrated.");
+            const reloadUrl = `${baseApiUrl}/webapps/${domain_name}/reload/`;
+            yield performPostRequest(reloadUrl, {}, api_token);
+            console.log(`Web application reloaded successfully.`);
         }
         catch (error) {
             core.setFailed(error instanceof Error ? error.message : JSON.stringify(error));

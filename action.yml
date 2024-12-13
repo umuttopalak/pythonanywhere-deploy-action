@@ -12,16 +12,7 @@ inputs:
     required: true
   domain_name:
     description: 'Domain name of the webapp to reload'
-    required: true
-  console_id:
-    description: 'Console id of the webapp to cloned from'
-    required: true
-  virtual_env:
-    description: 'virtual env which is created for django application'
-    required: true
-  directory:
-    description: 'github repo name or folder where project located'
-    required: true
+    required: false
 
 runs:
   using: 'node16'
