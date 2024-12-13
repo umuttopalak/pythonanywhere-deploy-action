@@ -44,10 +44,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const axios_1 = __importDefault(__nccwpck_require__(8757));
-let host = "www.pythonanywhere.com";
-let username = "umuttopalak";
-let api_token = "5387ff39f9a03be3e31c47f7ffbf4d8db153008d";
-let domain_name = "umuttopalak.pythonanywhere.com";
 /**
  * postConsoleInput
  * ----------------
@@ -183,6 +179,10 @@ function setupWebApp(baseWebAppUrl, api_token, domain_name) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const username = core.getInput("username", { required: true });
+            const api_token = core.getInput("api_token", { required: true });
+            const host = core.getInput("host", { required: true });
+            const domain_name = core.getInput("domain_name", { required: false }) || null;
             const baseApiUrl = `https://${host}/api/v0/user/${username}`;
             const baseConsoleUrl = `${baseApiUrl}/consoles/`;
             const baseWebAppUrl = `${baseApiUrl}/webapps/`;
