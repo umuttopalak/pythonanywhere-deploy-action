@@ -163,7 +163,7 @@ function setupConsole(baseConsoleUrl, api_token, host, username) {
         }
         else {
             const _console = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-            core.warning(`Console created. Please start your terminal: https://${host}/user/${username}/consoles/${_console.id}/`);
+            core.setFailed(`Console created. Please start your terminal: ${_console.console_url}`);
             return _console.id;
         }
     });

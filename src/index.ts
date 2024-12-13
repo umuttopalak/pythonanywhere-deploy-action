@@ -145,7 +145,7 @@ async function setupConsole(baseConsoleUrl: string, api_token: string, host: str
     return _console.id;
   } else {
     const _console = await performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-    core.warning(`Console created. Please start your terminal: ${_console.console_url}`);
+    core.setFailed(`Console created. Please start your terminal: ${_console.console_url}`);
     return _console.id;
   }
 }
