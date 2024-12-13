@@ -2,27 +2,6 @@ import * as core from "@actions/core";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
 /**
- * Custom CustomError Class
- */
-class CustomError extends Error {
-  public statusCode: number;
-  public details?: any;
-  public hints?: any;
-
-  constructor(message: string, statusCode: number = 500, details?: any, hints?: any) {
-    super(message);
-    this.name = "CustomError";
-    this.statusCode = statusCode;
-    this.details = details;
-    this.hints = hints;
-
-    if ((Error as any).captureStackTrace) {
-      (Error as any).captureStackTrace(this, this.constructor);
-    }
-  }
-}
-
-/**
  * postConsoleInput
  * ----------------
  *
@@ -49,14 +28,12 @@ async function postConsoleInput(
     const response: AxiosResponse = await axios.post(consoleRequestUrl, payload, config);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new CustomError(`Request failed with status code: ${response.status}`, response.status);
+      throw new Error(`Request failed with status code: ${response.status}`);
     }
 
     console.log(successMsg);
   } catch (error: any) {
-    throw new CustomError(`Error sending command "${input}": ${error.message}`, 500, {
-      response: error.response?.data,
-    });
+    throw new Error(`${error.response.data.error}`);
   }
 }
 
@@ -80,14 +57,12 @@ async function performGetRequest(requestUrl: string, token: string): Promise<any
     const response: AxiosResponse = await axios.get(requestUrl, config);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new CustomError(`GET request failed with status code: ${response.status}`, response.status);
+      throw new Error(`GET request failed with status code: ${response.status}`);
     }
 
     return response.data;
   } catch (error: any) {
-    throw new CustomError(`Error in GET request: ${error.message}`, 500, {
-      response: error.response?.data,
-    });
+    throw new Error(`Error in GET request: ${error.message}`);
   }
 }
 
@@ -117,41 +92,46 @@ async function performPostRequest(requestUrl: string, payload: any, token?: stri
     const response: AxiosResponse = await axios.post(requestUrl, payload, config);
 
     if (response.status < 200 || response.status >= 300) {
-      throw new CustomError(`POST request failed with status code: ${response.status}`, response.status);
+      throw new Error(`POST request failed with status code: ${response.status}`);
     }
 
     return response.data;
   } catch (error: any) {
-    throw new CustomError(`POST request to ${requestUrl} failed`, 500, {
-      message: error.message,
-      response: error.response?.data,
-    });
+    throw new Error(`POST request to ${requestUrl} failed: ${error.message}`);
   }
 }
 
 async function setupConsole(baseConsoleUrl: string, api_token: string): Promise<any> {
-  const consoleListData = await performGetRequest(baseConsoleUrl, api_token);
-  if (Array.isArray(consoleListData) && consoleListData.length > 0) {
-    const _console = consoleListData.pop();
-    return _console;
-  } else {
-    const _console = await performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-    return _console;
+  try {
+    const consoleListData = await performGetRequest(baseConsoleUrl, api_token);
+    if (Array.isArray(consoleListData) && consoleListData.length > 0) {
+      const _console = consoleListData.pop();
+      return _console;
+    } else {
+      const _console = await performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
+      return _console;
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to setup console: ${error.message}`);
   }
 }
 
 async function setupWebApp(baseWebAppUrl: string, api_token: string, domain_name: string | null): Promise<any> {
-  const webappListData = await performGetRequest(baseWebAppUrl, api_token);
-  if (Array.isArray(webappListData) && webappListData.length > 0) {
-    const web_app = domain_name
-      ? webappListData.find((webapp: any) => webapp.domain_name === domain_name)
-      : webappListData[0];
-    if (!web_app) {
-      throw new CustomError(`No matching web application found for domain: ${domain_name}`, 404, `Given domain_name not found in your applications!`);
+  try {
+    const webappListData = await performGetRequest(baseWebAppUrl, api_token);
+    if (Array.isArray(webappListData) && webappListData.length > 0) {
+      const web_app = domain_name
+        ? webappListData.find((webapp: any) => webapp.domain_name === domain_name)
+        : webappListData[0];
+      if (!web_app) {
+        throw new Error(`No matching web application found for domain: ${domain_name}`);
+      }
+      return web_app;
+    } else {
+      throw new Error("No web applications found. Check your application or account details!");
     }
-    return web_app;
-  } else {
-    throw new CustomError("No web applications found.", 404, `Check your application or account details!`);
+  } catch (error: any) {
+    throw new Error(`Failed to setup web app: ${error.message}`);
   }
 }
 
@@ -161,14 +141,14 @@ async function run() {
     const api_token = core.getInput("api_token", { required: true });
     const host = core.getInput("host", { required: true });
     const domain_name = core.getInput("domain_name", { required: false }) || null;
-
+    
     const baseApiUrl = `https://${host}/api/v0/user/${username}`;
     const baseConsoleUrl = `${baseApiUrl}/consoles/`;
     const baseWebAppUrl = `${baseApiUrl}/webapps/`;
 
     // Console Setup
     let _console = await setupConsole(baseConsoleUrl, api_token);
-    const consoleId = _console.id
+    const consoleId = _console.id;
 
     // WebApp Setup
     let web_app = await setupWebApp(baseWebAppUrl, api_token, domain_name);
@@ -181,15 +161,11 @@ async function run() {
       await postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${web_app.source_directory}/requirements.txt`, "Requirements Installed.");
       await postConsoleInput(consoleRequestUrl, api_token, `python ${web_app.source_directory}/manage.py migrate`, "Database Migrated.");
     } catch (error: any) {
-      if (error instanceof CustomError) {
-        if (error.details?.error?.includes("Console not yet started")) {
-          const consoleUrl = _console.console_url
-          core.setFailed(`Console not yet started. Please load it in a browser first: ${consoleUrl}`);
-        } else {
-          core.setFailed(`CustomError: ${error.message}`);
-        }
+      if (error.message.includes("Console not yet started")) {
+        const consoleUrl = _console.console_url;
+        throw new Error(`Activate your terminal: ${host}${consoleUrl}`);
       } else {
-        throw error;
+        throw new Error(`Error during console commands: ${error.message}`);
       }
     }
 
@@ -199,19 +175,8 @@ async function run() {
 
     core.info("Web application reloaded successfully.");
   } catch (error: any) {
-    if (error instanceof CustomError) {
-      core.setFailed(`CustomError: ${error.message} (Status Code: ${error.statusCode})`);
-      if (error.details) {
-        core.setFailed(`Details: ${JSON.stringify(error.details)}`);
-      }
-      if (error.hints) {
-        core.setFailed(`Hints: ${JSON.stringify(error.hints)}`);
-      }
-    } else if (error instanceof Error) {
-      core.setFailed(`General Error: ${error.message}`);
-    } else {
-      core.setFailed("An unknown error occurred.");
-    }
+    core.setFailed(`${error.message}`);
   }
 }
+
 run();
