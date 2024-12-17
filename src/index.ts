@@ -135,12 +135,13 @@ async function performPostRequest(requestUrl: string, payload: any, token?: stri
   }
 }
 
-async function parseAndCheckAlembic(response: string): Promise<any>{
-    const parsedData = JSON.parse(response);
-    const output: string = parsedData.output;
+async function parseAndCheckAlembic(response: any): Promise<boolean> {
+  try {
+    const output: string = response.output;
 
     if (!output) {
-      return false
+      console.log("No output found in the response.");
+      return false;
     }
 
     const lines = output.split("\r\n").filter((line) => line.trim() !== "");
@@ -149,12 +150,16 @@ async function parseAndCheckAlembic(response: string): Promise<any>{
 
     if (alembicFound) {
       console.log("Alembic found!");
-      return true
+      return true;
     } else {
       console.log("Alembic not found!");
-      return false
+      return false;
     }
+  } catch (error: any) {
+    console.error(`Error during Alembic check: ${error.message}`);
+    return false;
   }
+}
 
 async function setupConsole(baseConsoleUrl: string, api_token: string): Promise<any> {
   try {
