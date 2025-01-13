@@ -135,7 +135,7 @@ async function performPostRequest(requestUrl: string, payload: any, token?: stri
   }
 }
 
-async function parseAndCheckAlembic(response: any): Promise<boolean> {
+async function parseAndCheckAlembic(response: any, source_directory: string): Promise<boolean> {
   try {
     const output: string = response.output;
 
@@ -146,7 +146,7 @@ async function parseAndCheckAlembic(response: any): Promise<boolean> {
 
     const lines = output.split("\r\n").filter((line) => line.trim() !== "");
 
-    const alembicFound = lines.some((line) => line.includes("**Alembic found**"));
+    const alembicFound = lines.some((line) => line.includes("****"));
 
     if (alembicFound) {
       console.log("Alembic found!");
@@ -217,6 +217,13 @@ async function run() {
     // Virtual Environment and Database Setup
     const consoleRequestUrl = `${baseApiUrl}/consoles/${consoleId}/send_input/`;
 
+    // Git Pull 
+    try{
+      await postConsoleInput(consoleRequestUrl, api_token, `git -C ${web_app.source_directory} pull\n`, "Repository Pulled.");
+    } catch (error: any) {
+      throw new Error(`Error during pulling repository: ${error.message}`);
+    }
+
     if (framework_type == 'django') {
       try {
         await postConsoleInput(consoleRequestUrl, api_token, `source ${web_app.virtualenv_path}/bin/activate\n`, "Virtual Environment Activated.");
@@ -235,16 +242,15 @@ async function run() {
     else if (framework_type == 'flask') {
       try {
         const alembicIniPath = `${web_app.source_directory}/alembic.ini`;
-        await postConsoleInput(consoleRequestUrl, api_token, `if [ -f ${alembicIniPath} ]; then echo "**Alembic found**"; else echo "Alembic not found"; fi\n`, "Alembic configuration check completed.");
+        await postConsoleInput(consoleRequestUrl, api_token, `find ${web_app.source_directory} -type f -name "alembic.ini" -print\n`, "Alembic configuration check completed.");
         const alembicResponse = await getLatestConsoleOutput(baseApiUrl, consoleId, api_token, "Alembic.ini Checking.") as unknown as string;
-        const isAlembicUsing = await parseAndCheckAlembic(alembicResponse);
+        const isAlembicUsing = await parseAndCheckAlembic(alembicResponse, web_app.source_directory);
 
         await postConsoleInput(consoleRequestUrl, api_token, `source ${web_app.virtualenv_path}/bin/activate\n`, "Virtual Environment Activated.");
         await postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${web_app.source_directory}/requirements.txt\n`, "Requirements Installed.");
         
         if (isAlembicUsing) {
           console.log("Alembic migration starting...");
-          await postConsoleInput(consoleRequestUrl, api_token, `source ${web_app.virtualenv_path}/bin/activate\n`, "Virtual Environment Activated.");
           await postConsoleInput(consoleRequestUrl, api_token, `alembic upgrade head\n`, "Alembic migrations applied.");
         } 
         
