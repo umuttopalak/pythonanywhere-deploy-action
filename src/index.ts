@@ -221,7 +221,12 @@ async function run() {
     try{
       await postConsoleInput(consoleRequestUrl, api_token, `git -C ${web_app.source_directory} pull\n`, "Repository Pulled.");
     } catch (error: any) {
-      throw new Error(`Error during pulling repository: ${error.message}`);
+      if (error.message.includes("Console not yet started")) {
+        const consoleUrl = _console.console_url;
+        throw new Error(`Activate your terminal: ${host}${consoleUrl}`);
+      } else {
+        throw new Error(`Error during pulling repository: ${error.message}`);
+      }
     }
 
     if (framework_type == 'django') {
