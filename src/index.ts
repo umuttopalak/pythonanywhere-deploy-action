@@ -15,7 +15,7 @@ async function getLatestConsoleOutput(
   consoleId: string,
   token: string,
   successMsg: string
-): Promise<object> {
+): Promise<{ output: string }> {
   try {
     const config: AxiosRequestConfig = {
       headers: {
@@ -28,7 +28,7 @@ async function getLatestConsoleOutput(
     if (response.status < 200 || response.status >= 300) {
       throw new Error(`Request failed with status code: ${response.status}`);
     }
-    return response.data
+    return response.data;
     console.log(successMsg);
   } catch (error: any) {
     throw new Error(`${error.response.data.error}`);
@@ -135,29 +135,28 @@ async function performPostRequest(requestUrl: string, payload: any, token?: stri
   }
 }
 
-async function parseAndCheckAlembic(response: any, source_directory: string): Promise<boolean> {
+async function parseAndCheckAlembic(response: any, source_directory: string): Promise<{exists: boolean, path?: string}> {
   try {
     const output: string = response.output;
 
     if (!output) {
       console.log("No output found in the response.");
-      return false;
+      return { exists: false };
     }
 
-    const lines = output.split("\r\n").filter((line) => line.trim() !== "");
+    const lines = output.split(/\r?\n/).filter((line) => line.trim() !== "");
+    const alembicIniPath = lines.find((line) => line.includes("alembic.ini"));
 
-    const alembicFound = lines.some((line) => line.includes("****"));
-
-    if (alembicFound) {
-      console.log("Alembic found!");
-      return true;
+    if (alembicIniPath) {
+      console.log("Alembic configuration found!");
+      return { exists: true, path: alembicIniPath.trim() };
     } else {
-      console.log("Alembic not found!");
-      return false;
+      console.log("Alembic configuration not found, skipping migrations");
+      return { exists: false };
     }
   } catch (error: any) {
     console.error(`Error during Alembic check: ${error.message}`);
-    return false;
+    return { exists: false };
   }
 }
 
@@ -195,13 +194,60 @@ async function setupWebApp(baseWebAppUrl: string, api_token: string, domain_name
   }
 }
 
+async function checkGitPullOutput(response: any): Promise<{success: boolean, error?: string}> {
+  try {
+    const output: string = response.output;
+    
+    if (!output) {
+      return { success: true };
+    }
+
+    const lines = output.split(/\r?\n/).filter((line) => line.trim() !== "");
+    
+    if (lines.some(line => line.includes("Already up to date"))) {
+      console.log("Repository is already up to date");
+      return { success: true };
+    }
+    
+    const hasLocalChanges = lines.some(line => 
+      line.includes("Your local changes to the following files would be overwritten by merge"));
+    
+    const hasUntrackedFiles = lines.some(line => 
+      line.includes("untracked working tree files would be overwritten by merge"));
+    
+    const hasError = lines.some(line => line.startsWith("error:"));
+
+    if (hasLocalChanges) {
+      return {
+        success: false,
+        error: "local_changes"
+      };
+    } else if (hasUntrackedFiles) {
+      return {
+        success: false,
+        error: "untracked_files"
+      };
+    } else if (hasError) {
+      return {
+        success: false,
+        error: "git_error"
+      };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error(`Error during Git pull check: ${error.message}`);
+    return { success: false, error: "unknown" };
+  }
+}
+
 async function run() {
   try {
     const username = core.getInput("username", { required: true });
     const api_token = core.getInput("api_token", { required: true });
     const host = core.getInput("host", { required: true });
     const domain_name = core.getInput("domain_name", { required: false }) || null;
-    const framework_type = core.getInput("framework_type", { required: false}) || "flask";
+    const framework_type = core.getInput("framework_type", { required: false}) || "django";
     
     const baseApiUrl = `https://${host}/api/v0/user/${username}`;
     const baseConsoleUrl = `${baseApiUrl}/consoles/`;
@@ -218,14 +264,42 @@ async function run() {
     const consoleRequestUrl = `${baseApiUrl}/consoles/${consoleId}/send_input/`;
 
     // Git Pull 
-    try{
-      await postConsoleInput(consoleRequestUrl, api_token, `git -C ${web_app.source_directory} pull\n`, "Repository Pulled.");
+    try {
+      await postConsoleInput(consoleRequestUrl, api_token, `git -C ${web_app.source_directory} pull\n`, "Checking repository status...");
+      const pullResponse = await getLatestConsoleOutput(baseApiUrl, consoleId, api_token, "Git pull completed");
+      const pullCheck = await checkGitPullOutput(pullResponse);
+
+      if (!pullCheck.success) {
+        switch(pullCheck.error) {
+          case "local_changes":
+            console.error(
+              `Git pull failed: Local changes detected in ${web_app.source_directory}. \n` +
+              "Please either: \n1) Commit changes (git add . && git commit -m 'message'), \n" +
+              "2) Stash them (git stash), or \n" +
+              "3) Remove them (git reset --hard origin/main)\n"
+            );
+            throw new Error("Git pull failed due to local changes");
+          case "untracked_files":
+            console.error(
+              `Git pull failed: Untracked files detected in ${web_app.source_directory}. ` +
+              "Please either: 1) Add files (git add .) or " +
+              "2) Remove them (git clean -f)"
+            );
+            throw new Error("Git pull failed due to untracked files");
+          case "git_error":
+          default:
+            console.error("Git pull failed. Please check your repository configuration and try again.");
+            throw new Error("Git pull failed");
+        }
+      }
+      
+      console.log("Repository updated successfully.");
     } catch (error: any) {
       if (error.message.includes("Console not yet started")) {
         const consoleUrl = _console.console_url;
         throw new Error(`Activate your terminal: ${host}${consoleUrl}`);
       } else {
-        throw new Error(`Error during pulling repository: ${error.message}`);
+        throw error;
       }
     }
 
@@ -246,19 +320,36 @@ async function run() {
 
     else if (framework_type == 'flask') {
       try {
-        const alembicIniPath = `${web_app.source_directory}/alembic.ini`;
-        await postConsoleInput(consoleRequestUrl, api_token, `find ${web_app.source_directory} -type f -name "alembic.ini" -print\n`, "Alembic configuration check completed.");
-        const alembicResponse = await getLatestConsoleOutput(baseApiUrl, consoleId, api_token, "Alembic.ini Checking.") as unknown as string;
-        const isAlembicUsing = await parseAndCheckAlembic(alembicResponse, web_app.source_directory);
-
         await postConsoleInput(consoleRequestUrl, api_token, `source ${web_app.virtualenv_path}/bin/activate\n`, "Virtual Environment Activated.");
         await postConsoleInput(consoleRequestUrl, api_token, `pip install -r ${web_app.source_directory}/requirements.txt\n`, "Requirements Installed.");
         
-        if (isAlembicUsing) {
-          console.log("Alembic migration starting...");
-          await postConsoleInput(consoleRequestUrl, api_token, `alembic upgrade head\n`, "Alembic migrations applied.");
-        } 
-        
+        await postConsoleInput(consoleRequestUrl, api_token, `find ${web_app.source_directory} -type f -name "alembic.ini" -print\n`, "Checking for alembic.ini");
+        const alembicResponse = await getLatestConsoleOutput(baseApiUrl, consoleId, api_token, "Alembic check completed");
+        const alembicCheck = await parseAndCheckAlembic(alembicResponse, web_app.source_directory);
+
+        if (alembicCheck.exists && alembicCheck.path) {
+          try {
+            console.log("Alembic configuration found, running migrations...");
+            await postConsoleInput(
+              consoleRequestUrl, 
+              api_token, 
+              `cd $(dirname $(find ${web_app.source_directory} -type f -name "alembic.ini" -print -quit)) && alembic upgrade head\n`, 
+              "Checking alembic status"
+            );
+            const alembicUpgradeResponse = await getLatestConsoleOutput(baseApiUrl, consoleId, api_token, "");
+            
+            if (alembicUpgradeResponse.output && alembicUpgradeResponse.output.includes("FAILED")) {
+              console.error("Alembic migration failed. Please check your alembic configuration.");
+              console.error(alembicUpgradeResponse.output);
+            } else {
+              console.log("Alembic migrations completed successfully");
+            }
+          } catch (error: any) {
+            console.error(`Error during alembic migration: ${error.message}`);
+          }
+        } else {
+          console.log("No Alembic configuration found, skipping migrations");
+        }
       } catch (error: any) {
         if (error.message.includes("Console not yet started")) {
           const consoleUrl = _console.console_url;
