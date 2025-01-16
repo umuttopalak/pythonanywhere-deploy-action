@@ -196,13 +196,13 @@ function setupConsole(baseConsoleUrl, api_token) {
         try {
             const consoleListData = yield performGetRequest(baseConsoleUrl, api_token);
             if (Array.isArray(consoleListData) && consoleListData.length > 0) {
-                const _console = consoleListData.pop();
-                return _console;
+                const validConsole = consoleListData.find(console => console.executable === "bash" || console.executable === "sh");
+                if (validConsole) {
+                    return validConsole;
+                }
             }
-            else {
-                const _console = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-                return _console;
-            }
+            const newConsole = yield performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
+            return newConsole;
         }
         catch (error) {
             throw new Error(`Failed to setup console: ${error.message}`);

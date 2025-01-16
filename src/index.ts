@@ -164,12 +164,18 @@ async function setupConsole(baseConsoleUrl: string, api_token: string): Promise<
   try {
     const consoleListData = await performGetRequest(baseConsoleUrl, api_token);
     if (Array.isArray(consoleListData) && consoleListData.length > 0) {
-      const _console = consoleListData.pop();
-      return _console;
-    } else {
-      const _console = await performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
-      return _console;
+      const validConsole = consoleListData.find(console => 
+        console.executable === "bash" || console.executable === "sh"
+      );
+      
+      if (validConsole) {
+        return validConsole;
+      }
     }
+    
+    const newConsole = await performPostRequest(baseConsoleUrl, { executable: "bash" }, api_token);
+    return newConsole;
+    
   } catch (error: any) {
     throw new Error(`Failed to setup console: ${error.message}`);
   }
